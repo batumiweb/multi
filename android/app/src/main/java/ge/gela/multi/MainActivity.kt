@@ -114,7 +114,11 @@ fun App(act: MainActivity) {
                 Column {
                     Text("მულტი", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        if (tab == 0) "აპების ორი ასლი — ორი ექაუნთი" else "ვებ ექაუნთები — რამდენიც გინდა",
+                        when (tab) {
+                            0 -> "ნებისმიერი აპის მეორე ასლი"
+                            1 -> "ვებ ექაუნთები — რამდენიც გინდა"
+                            else -> "როგორ მივიღო მეტი ასლი"
+                        },
                         color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp
                     )
                 }
@@ -130,11 +134,19 @@ fun App(act: MainActivity) {
                     selected = tab == 1, onClick = { tab = 1 },
                     icon = { Icon(Icons.Default.Person, null) }, label = { Text("ვებ ექაუნთები") }
                 )
+                NavigationBarItem(
+                    selected = tab == 2, onClick = { tab = 2 },
+                    icon = { Icon(Icons.Default.Info, null) }, label = { Text("მეტი ასლი") }
+                )
             }
         }
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
-            if (tab == 0) CloneTab(act) else WebTab()
+            when (tab) {
+                0 -> CloneTab(act)
+                1 -> WebTab()
+                else -> GuideTab()
+            }
         }
     }
 }
@@ -337,7 +349,7 @@ fun SetupCard(act: MainActivity) {
 fun InfoCard() {
     Card(colors = CardDefaults.cardColors(containerColor = IndigoLight)) {
         Column(Modifier.padding(14.dp)) {
-            Text("• ყოველ აპს 1 კლონი შეიძლება ჰქონდეს (სულ 2 ექაუნთი)", fontSize = 13.sp)
+            Text("• აქ ყოველ აპს 1 კლონი ექნება — მეტისთვის ნახე „მეტი ასლი“", fontSize = 13.sp)
             Text("• კლონებს აიკონზე პატარა ჩანთის ნიშანი აქვთ", fontSize = 13.sp)
             Text("• WhatsApp-ის კლონს სხვა ტელეფონის ნომერი სჭირდება", fontSize = 13.sp)
             Text("• Facebook-ის მე-3, მე-4… ექაუნთი — „ვებ ექაუნთების“ ჩანართში", fontSize = 13.sp)
