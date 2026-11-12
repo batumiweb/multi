@@ -75,7 +75,10 @@ fun toast(ctx: Context, s: String) = Toast.makeText(ctx, s, Toast.LENGTH_LONG).s
 class MainActivity : ComponentActivity() {
     var refreshTick by mutableIntStateOf(0)
 
-    val provision = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    val provision = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        if (res.resultCode != RESULT_OK && Profile.workUser(this) == null) {
+            toast(this, "სივრცე ვერ შეიქმნა. თუ ტელეფონზე უკვე არის სამუშაო პროფილი ან „მეორე სივრცე“, შეიძლება ხელს უშლიდეს.")
+        }
         refreshLater()
     }
 

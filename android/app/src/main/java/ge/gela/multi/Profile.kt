@@ -35,11 +35,23 @@ object Profile {
     fun isInsideProfile(ctx: Context): Boolean =
         try { dpm(ctx).isProfileOwnerApp(ctx.packageName) } catch (e: Exception) { false }
 
-    /** მეორე (სამუშაო) პროფილის მომხმარებელი, თუ არსებობს */
-    fun workUser(ctx: Context): UserHandle? {
-        val um = ctx.getSystemService(UserManager::class.java)
+    /**
+     * ჩვენი კლონების სივრცე — ის პროფილი, სადაც „მულტის“ ასლი დგას.
+     * (Xiaomi/Honor/Samsung-ის „ორმაგი აპების“ სივრცეებსაც userProfiles აბრუნებს —
+     * ისინი ჩვენი არ არის და იქ ბრძანებებს ვერ გავგზავნით.)
+     */
+    fun workUser(ctx: Context): UserHandle? =
+        try {
+            ctx.getSystemService(android.content.pm.CrossProfileApps::class.java)
+                .targetUserProfiles.firstOrNull()
+        } catch (e: Exception) { null }
+
+    /** ტელეფონზე სხვა (არა ჩვენი) პროფილი/სივრცე თუ არის */
+    fun otherProfiles(ctx: Context): List<UserHandle> {
         val me = Process.myUserHandle()
-        return um.userProfiles.firstOrNull { it != me }
+        val ours = workUser(ctx)
+        return ctx.getSystemService(UserManager::class.java).userProfiles
+            .filter { it != me && it != ours }
     }
 
     fun isProfilePaused(ctx: Context, user: UserHandle): Boolean =
