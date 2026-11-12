@@ -91,6 +91,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Profile.isInsideProfile(this)) {
+            // კლონების სივრცის შიგნით გაშვებისას — ხიდის გამართვა და დახურვა
+            Profile.setupInsideProfile(this)
+            toast(this, "კლონების სივრცე გამართულია ✓ დაბრუნდი „მულტიში“")
+            finish()
+            return
+        }
         enableEdgeToEdge()
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Indigo, secondary = Indigo)) {
@@ -206,9 +213,32 @@ fun CloneTab(act: MainActivity) {
             return@LazyColumn
         }
 
+        val broken = if (w == null) Profile.ourProfile(ctx) else null
+        if (w == null && broken != null) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = Amber)) {
+                    Column(Modifier.padding(20.dp)) {
+                        Text("კლონების სივრცე არსებობს, მაგრამ კავშირი აკლია", fontWeight = FontWeight.Bold, color = AmberDark)
+                        Spacer(Modifier.height(6.dp))
+                        Text("დააჭირე „შეკეთება“ — წამით გაიხსნება და დაიხურება, შემდეგ კლონირება იმუშავებს.", fontSize = 14.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = {
+                            if (Profile.isProfilePaused(ctx, broken)) {
+                                try { ctx.getSystemService(UserManager::class.java).requestQuietModeEnabled(false, broken) }
+                                catch (e: Exception) { toast(ctx, "ჯერ ჩართე „სამუშაო აპები“ სწრაფი პარამეტრებიდან") }
+                            }
+                            if (!Profile.repair(ctx, broken)) toast(ctx, "ვერ გაიხსნა — ჩართე „სამუშაო აპები“ და სცადე თავიდან")
+                            act.refreshLater()
+                        }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("შეკეთება", fontSize = 16.sp) }
+                    }
+                }
+            }
+            item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+            return@LazyColumn
+        }
         if (w == null) {
             item { SetupCard(act) }
-            item { Text("v3 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+            item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
             return@LazyColumn
         }
 
@@ -274,7 +304,7 @@ fun CloneTab(act: MainActivity) {
             })
         }
 
-        item { Text("v3 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+        item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
         item {
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = { confirmRemove = true }) {

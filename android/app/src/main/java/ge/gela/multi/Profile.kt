@@ -52,6 +52,21 @@ object Profile {
         return candidates.firstOrNull { userId(it) !in KNOWN_OEM_SPACES } ?: candidates.firstOrNull()
     }
 
+    /** პროფილი, სადაც ჩვენი აპის ასლი დგას (ხიდის მიუხედავად) */
+    fun ourProfile(ctx: Context): UserHandle? {
+        val c = try {
+            ctx.getSystemService(android.content.pm.CrossProfileApps::class.java).targetUserProfiles
+        } catch (e: Exception) { emptyList() }
+        return c.firstOrNull { userId(it) !in KNOWN_OEM_SPACES } ?: c.firstOrNull()
+    }
+
+    /** პროფილში ჩვენი აპის გაშვება — იქ თავიდან გაიმართება ხიდი */
+    fun repair(ctx: Context, user: UserHandle): Boolean = try {
+        ctx.getSystemService(android.content.pm.CrossProfileApps::class.java)
+            .startMainActivity(ComponentName(ctx, MainActivity::class.java), user)
+        true
+    } catch (e: Exception) { false }
+
     private val KNOWN_OEM_SPACES = setOf(95, 150, 151, 152, 153, 154, 155, 999)
 
     fun userId(u: UserHandle): Int = u.hashCode() // UserHandle.hashCode() == user id
@@ -105,14 +120,7 @@ object Profile {
                 d.addCrossProfileIntentFilter(a, f, DevicePolicyManager.FLAG_PARENT_CAN_ACCESS_MANAGED)
             }
         } catch (_: Exception) {}
-        // პროფილში ჩვენი აპის მეორე აიკონი არ გვინდა
-        try {
-            ctx.packageManager.setComponentEnabledSetting(
-                ComponentName(ctx, MainActivity::class.java),
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP
-            )
-        } catch (_: Exception) {}
+        // (MainActivity პროფილში ჩართული რჩება — მისით ხდება „შეკეთება“ მთავარი პროფილიდან)
     }
 
     /** მთავარი პროფილიდან ბრძანების გაგზავნა სამუშაო პროფილში */
