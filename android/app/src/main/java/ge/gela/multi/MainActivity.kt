@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
+        Profile.setCommandReceiverEnabled(this, false)
         enableEdgeToEdge()
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Indigo, secondary = Indigo)) {
@@ -233,12 +234,12 @@ fun CloneTab(act: MainActivity) {
                     }
                 }
             }
-            item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+            item { Text("v5 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
             return@LazyColumn
         }
         if (w == null) {
             item { SetupCard(act) }
-            item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+            item { Text("v5 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
             return@LazyColumn
         }
 
@@ -300,11 +301,11 @@ fun CloneTab(act: MainActivity) {
         items(available, key = { "p_" + it.pkg }) { app ->
             AppRow(app, buttonText = "კლონი", onButton = {
                 if (Profile.sendToProfile(ctx, Profile.ACTION_CLONE, app.pkg)) act.refreshLater()
-                else toast(ctx, "კლონების სივრცე ვერ მოიძებნა")
+                else toast(ctx, "ვერ გაიგზავნა: ${Profile.lastError}")
             })
         }
 
-        item { Text("v4 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
+        item { Text("v5 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
         item {
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = { confirmRemove = true }) {

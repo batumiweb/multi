@@ -109,6 +109,7 @@ object Profile {
     /** სრულდება პროფილის შიგნით, შექმნისთანავე */
     fun setupInsideProfile(ctx: Context) {
         if (!isInsideProfile(ctx)) return
+        setCommandReceiverEnabled(ctx, true)
         val d = dpm(ctx)
         val a = admin(ctx)
         try { d.setProfileName(a, "მულტი") } catch (_: Exception) {}
@@ -123,16 +124,41 @@ object Profile {
         // (MainActivity პროფილში ჩართული რჩება — მისით ხდება „შეკეთება“ მთავარი პროფილიდან)
     }
 
+    var lastError: String? = null
+
+    /** მთავარ პროფილში ბრძანების მიმღები გამორთულია — რომ intent მხოლოდ სივრცეში წავიდეს */
+    fun setCommandReceiverEnabled(ctx: Context, enabled: Boolean) {
+        try {
+            ctx.packageManager.setComponentEnabledSetting(
+                ComponentName(ctx, ProfileCommandActivity::class.java),
+                if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP
+            )
+        } catch (_: Exception) {}
+    }
+
     /** მთავარი პროფილიდან ბრძანების გაგზავნა სამუშაო პროფილში */
     fun sendToProfile(ctx: Context, action: String, pkg: String? = null): Boolean {
-        val i = Intent(action).addCategory(Intent.CATEGORY_DEFAULT)
-        if (pkg != null) i.putExtra(EXTRA_PKG, pkg)
-        val target = ctx.packageManager.queryIntentActivities(i, 0)
+        lastError = null
+        fun base(): Intent {
+            val i = Intent(action).addCategory(Intent.CATEGORY_DEFAULT).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (pkg != null) i.putExtra(EXTRA_PKG, pkg)
+            return i
+        }
+        // 1) პირდაპირ „ხიდზე“ (forwarder)
+        val target = ctx.packageManager.queryIntentActivities(base(), 0)
             .firstOrNull { it.activityInfo.packageName != ctx.packageName }
-            ?: return false
-        i.component = ComponentName(target.activityInfo.packageName, target.activityInfo.name)
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return try { ctx.startActivity(i); true } catch (e: Exception) { false }
+        if (target != null) {
+            try {
+                ctx.startActivity(base().setComponent(
+                    ComponentName(target.activityInfo.packageName, target.activityInfo.name)))
+                return true
+            } catch (e: Exception) { lastError = e.javaClass.simpleName + ": " + e.message }
+        }
+        // 2) ჩვეულებრივი intent — მთავარ პროფილში მიმღები გამორთულია, ამიტომ სივრცეში წავა
+        return try { ctx.startActivity(base()); true }
+        catch (e: Exception) { lastError = (lastError ?: "") + " | " + e.javaClass.simpleName + ": " + e.message; false }
     }
 }
 
