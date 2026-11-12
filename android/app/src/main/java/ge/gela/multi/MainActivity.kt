@@ -208,6 +208,7 @@ fun CloneTab(act: MainActivity) {
 
         if (w == null) {
             item { SetupCard(act) }
+            item { Text("v3 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
             return@LazyColumn
         }
 
@@ -273,6 +274,7 @@ fun CloneTab(act: MainActivity) {
             })
         }
 
+        item { Text("v3 · " + Profile.debugInfo(ctx), fontSize = 11.sp, color = Color.Gray) }
         item {
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = { confirmRemove = true }) {

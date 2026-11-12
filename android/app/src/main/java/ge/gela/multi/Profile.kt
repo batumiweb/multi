@@ -40,11 +40,38 @@ object Profile {
      * (Xiaomi/Honor/Samsung-ის „ორმაგი აპების“ სივრცეებსაც userProfiles აბრუნებს —
      * ისინი ჩვენი არ არის და იქ ბრძანებებს ვერ გავგზავნით.)
      */
-    fun workUser(ctx: Context): UserHandle? =
-        try {
-            ctx.getSystemService(android.content.pm.CrossProfileApps::class.java)
-                .targetUserProfiles.firstOrNull()
-        } catch (e: Exception) { null }
+    fun workUser(ctx: Context): UserHandle? {
+        // ზუსტი ნიშანი: მხოლოდ ჩვენი სივრცე ქმნის ამ „ხიდს“ (cross-profile intent filter)
+        if (!hasProfileChannel(ctx)) return null
+        val me = Process.myUserHandle()
+        val candidates = try {
+            ctx.getSystemService(android.content.pm.CrossProfileApps::class.java).targetUserProfiles
+        } catch (e: Exception) { emptyList() }
+            .ifEmpty { ctx.getSystemService(UserManager::class.java).userProfiles.filter { it != me } }
+        // ბრენდების სივრცეები: Samsung Dual Messenger 95, Secure Folder 150+, Xiaomi Dual apps 999
+        return candidates.firstOrNull { userId(it) !in KNOWN_OEM_SPACES } ?: candidates.firstOrNull()
+    }
+
+    private val KNOWN_OEM_SPACES = setOf(95, 150, 151, 152, 153, 154, 155, 999)
+
+    fun userId(u: UserHandle): Int = u.hashCode() // UserHandle.hashCode() == user id
+
+    fun hasProfileChannel(ctx: Context): Boolean {
+        val i = Intent(ACTION_CLONE).addCategory(Intent.CATEGORY_DEFAULT)
+        return ctx.packageManager.queryIntentActivities(i, 0)
+            .any { it.activityInfo.packageName != ctx.packageName }
+    }
+
+    /** დიაგნოსტიკა — ეკრანის ბოლოს პატარა ტექსტად */
+    fun debugInfo(ctx: Context): String {
+        val me = Process.myUserHandle()
+        val all = try { ctx.getSystemService(UserManager::class.java).userProfiles.map { userId(it) } } catch (e: Exception) { emptyList() }
+        val targets = try {
+            ctx.getSystemService(android.content.pm.CrossProfileApps::class.java).targetUserProfiles.map { userId(it) }
+        } catch (e: Exception) { emptyList() }
+        return "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} · მე=${userId(me)} · " +
+            "პროფილები=$all · ასლები=$targets · ხიდი=${hasProfileChannel(ctx)}"
+    }
 
     /** ტელეფონზე სხვა (არა ჩვენი) პროფილი/სივრცე თუ არის */
     fun otherProfiles(ctx: Context): List<UserHandle> {
